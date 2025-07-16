@@ -19,11 +19,11 @@ def gyro_straight(speed, duration):
   while stopWatch.time() - start_time < duration:
     yaw_angle = hub.imu.heading()
     if yaw_angle > 180:
-      error = yaw_angle - 360
+      out_angle = yaw_angle - 360
     else:
-      error = -yaw_angle
+      out_angle = -yaw_angle
 
-    correction = 3 * error
+    correction = 3 * out_angle
 
     driveBase.drive(speed, correction)
   
