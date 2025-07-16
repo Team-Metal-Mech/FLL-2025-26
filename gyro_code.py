@@ -6,17 +6,25 @@ from pybricks.tools import StopWatch
 
 left_motor = Motor(Port.E)
 right_motor = Motor(Port.F)
+hub = PrimeHub
+driveBase = DriveBase
+stopWatch = StopWatch
 
 def gyro_straight(speed, duration):
-  DriveBase(left_motor, right_motor, )
-  PrimeHub.imu.reset_heading()
-  StopWatch.reset()
-  start_time = StopWatch.time()
+  driveBase(left_motor, right_motor, )
+  hub.imu.reset_heading()
+  stopWatch.reset()
+  start_time = stopWatch.time()
 
-  while StopWatch.time() - start_time < duration:
-    error = -PrimeHub.imu.heading()
+  while stopWatch.time() - start_time < duration:
+    yaw_angle = hub.imu.heading()
+    if yaw_angle > 180:
+      error = yaw_angle - 360
+    else:
+      error = -yaw_angle
+
     correction = 3 * error
 
-    DriveBase.drive(speed, correction)
+    driveBase.drive(speed, correction)
   
-  DriveBase.stop()
+  driveBase.stop()
