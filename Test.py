@@ -9,5 +9,4 @@ motor_a = Motor(Port.A)
 Motor.angle(100, 360, Stop.HOLD)
 
 # add comment
-# add 2 comment
 wait(1000)
