@@ -15,7 +15,7 @@ stopWatch = StopWatch
 # Function created
 def gyro_straight(speed, duration):
   # We still need to measure the robot's dimensions
-  driveBase(left_motor, right_motor, )
+  driveBase(left_motor, right_motor, 62.4, 75)
   # Reset yaw angle
   hub.imu.reset_heading()
   # Reseting the stopwatch
@@ -39,3 +39,5 @@ def gyro_straight(speed, duration):
 
   # Stop the Robot  
   driveBase.stop()
+
+  gyro_straight()

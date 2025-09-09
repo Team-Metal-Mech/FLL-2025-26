@@ -5,9 +5,12 @@ pybricksdev run ble Code Name.py
 ```
 ### Set DrvieBase:
 ```
-DriveBase(Left_motor, Right_motor, Wheel Diameter, axle_track)
+drivebase = DriveBase(Left_motor, Right_motor, Wheel Diameter, axle_track)
 ```
 ### Drive by a given distance
 ```
-straight(distance(mm), stop_option)
+drivebase.straight(distance(mm), stop_option)
 ```
+### Point Turn
+```
+drivebase.turn(angle, stop_option)
