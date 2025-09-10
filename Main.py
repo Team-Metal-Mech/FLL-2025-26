@@ -77,6 +77,9 @@ class MetalMechRobot:
       elif name == 'SA':
         self.driveBase.settings(straight_acceleration=int(value))
 
+      elif name == 'TA':
+        self.driveBase.settings(turn_rate=int(value))
+
       elif name == 'AS':
         self.arm_speed = int(value)
 
