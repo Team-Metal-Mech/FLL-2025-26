@@ -42,19 +42,19 @@ ST:700
 SA:2000
 AS:700
 F:20
-RA:-20
+RA:-100
+PR:100
 """
 
 class MetalMechRobot:
   def __init__(self):
     self.hub = PrimeHub()
-    left = Motor(Port.E, Direction.COUNTERCLOCKWISE)
-    right = Motor(Port.F)
-    self.driveBase = DriveBase(left, right, WHEEL_DIAMETER_MM, AXLE_TRACK_MM)
+    self.left = Motor(Port.E, Direction.COUNTERCLOCKWISE)
+    self.right = Motor(Port.F)
+    self.driveBase = DriveBase(self.left, self.right, WHEEL_DIAMETER_MM, AXLE_TRACK_MM)
     self.at_left_motor = Motor(Port.C)
     self.at_right_motor = Motor(Port.D)
-    self.left_motor = Motor(Port.E)
-    self.right_motor = Motor(Port.F)
+    self.turn_speed = 200
     # 기본 설정 적용
     self.driveBase.settings(straight_speed=DEFAULT_STRAIGHT_SPEED,
                      straight_acceleration=DEFAULT_STRAIGHT_ACCEL,
@@ -77,34 +77,37 @@ class MetalMechRobot:
         self.driveBase.settings(turn_rate=int(value))
         self.turn_speed = int(value)
 
-      elif name == 'SA':
+      elif name == 'SA':  # 악셀러레이션 전진 후진
         self.driveBase.settings(straight_acceleration=int(value))
 
-      elif name == 'TA':
+      elif name == 'TA':  # 악셀러레이션 포인트 턴
         self.driveBase.settings(turn_acceleration=int(value))
 
-      elif name == 'AS':
+      elif name == 'AS':  # 어테치먼트 스피드
         self.arm_speed = int(value)
 
-      elif name == 'F':
+      elif name == 'F': # 앞으로
         self.driveBase.straight(int(value * 10))
 
-      elif name == 'B':
+      elif name == 'B': # 뒤로
         self.driveBase.straight(int(-value * 10))
 
-      elif name == 'L':
+      elif name == 'L': # 왼쪽 턴
         self.driveBase.turn(-value)
 
-      elif name == 'R':
+      elif name == 'R': # 오른쪽 턴
         self.driveBase.turn(value)
 
-      elif name == 'PR':
-        self.at_right_motor.run_angle(self.turn_speed, value)
+      elif name == 'PR':  # 피봇턴 오른쪽
+        self.right.run_angle(self.turn_speed, value)
 
-      elif name == 'LA':
+      elif name == 'PL':  # 피봇턴 왼쪽
+        self.left.run_angle(self.turn_speed, value)
+
+      elif name == 'LA':  # 왼쪽 모터
         self.at_left_motor.run_angle(self.arm_speed, value)
       
-      elif name == 'RA':
+      elif name == 'RA':  # 오른쪽 모터
         self.at_right_motor.run_angle(self.arm_speed, value)
 
 
