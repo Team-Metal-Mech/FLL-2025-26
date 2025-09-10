@@ -51,8 +51,10 @@ class MetalMechRobot:
     left = Motor(Port.E, Direction.COUNTERCLOCKWISE)
     right = Motor(Port.F)
     self.driveBase = DriveBase(left, right, WHEEL_DIAMETER_MM, AXLE_TRACK_MM)
-    self.left_motor = Motor(Port.C)
-    self.right_motor = Motor(Port.D)
+    self.at_left_motor = Motor(Port.C)
+    self.at_right_motor = Motor(Port.D)
+    self.left_motor = Motor(Port.E)
+    self.right_motor = Motor(Port.F)
     # 기본 설정 적용
     self.driveBase.settings(straight_speed=DEFAULT_STRAIGHT_SPEED,
                      straight_acceleration=DEFAULT_STRAIGHT_ACCEL,
@@ -73,12 +75,13 @@ class MetalMechRobot:
 
       elif name == 'ST':  # 회전 속도(deg/s)
         self.driveBase.settings(turn_rate=int(value))
+        self.turn_speed = int(value)
 
       elif name == 'SA':
         self.driveBase.settings(straight_acceleration=int(value))
 
       elif name == 'TA':
-        self.driveBase.settings(turn_rate=int(value))
+        self.driveBase.settings(turn_acceleration=int(value))
 
       elif name == 'AS':
         self.arm_speed = int(value)
@@ -95,11 +98,14 @@ class MetalMechRobot:
       elif name == 'R':
         self.driveBase.turn(value)
 
+      elif name == 'PR':
+        self.at_right_motor.run_angle(self.turn_speed, value)
+
       elif name == 'LA':
-        self.left_motor.run_angle(self.arm_speed, value)
+        self.at_left_motor.run_angle(self.arm_speed, value)
       
       elif name == 'RA':
-        self.right_motor.run_angle(self.arm_speed, value)
+        self.at_right_motor.run_angle(self.arm_speed, value)
 
 
 def wait_for_button_release(hub):
