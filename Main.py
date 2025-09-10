@@ -16,9 +16,14 @@ DEFAULT_TURN_ACCEL = 180       # deg/s^2
 
 movement1 = """
 SS:700
-ST:700
-F:40
-L:30
+ST:750
+F:50
+L:65
+F:7
+L:17
+R:23
+B:7
+F:7
 """
 movement2 = """
 SS:150
