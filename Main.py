@@ -110,6 +110,9 @@ class MetalMechRobot:
       elif name == 'RA':  # 오른쪽 모터
         self.at_right_motor.run_angle(self.arm_speed, value)
 
+      elif name == 'W': # wait
+        wait(int(value * 1000))
+
 
 def wait_for_button_release(hub):
   while True:
