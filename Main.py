@@ -16,14 +16,30 @@ DEFAULT_TURN_ACCEL = 180       # deg/s^2
 
 movement1 = """
 SS:700
+SA:1000
 ST:750
-F:50
-L:65
-F:7
-L:17
-R:23
-B:7
-F:7
+TA:900
+AS:700
+RA:-29
+F:64
+L:125
+TA:500
+R:26
+B:9
+F:9
+AS:400
+RA:-28
+R:100
+AS:600
+RA:28
+F:15
+L:60
+B:8
+R:3
+F:9
+RA:-28
+L:3
+F:6
 """
 movement2 = """
 SS:150
@@ -41,9 +57,7 @@ SS:700
 ST:700
 SA:2000
 AS:700
-F:20
-RA:-100
-PR:100
+F:10000
 """
 
 class MetalMechRobot:
