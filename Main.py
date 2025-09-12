@@ -75,6 +75,7 @@ class MetalMechRobot:
                      turn_rate=DEFAULT_TURN_RATE,
                      turn_acceleration=DEFAULT_TURN_ACCEL)
 
+    self.driveBase.use_gyro(True)
   def execute(self, text):
     commands = text.split("\n")
     for command in commands:
