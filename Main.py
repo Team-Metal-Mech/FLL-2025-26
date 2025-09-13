@@ -75,8 +75,6 @@ class MetalMechRobot:
                      turn_rate=DEFAULT_TURN_RATE,
                      turn_acceleration=DEFAULT_TURN_ACCEL)
 
-    self.driveBase.use_gyro(True)
-
   def set_straight_speed(self, value):
     self.driveBase.settings(straight_speed=int(value))
 
@@ -95,33 +93,41 @@ class MetalMechRobot:
 
   def do_forward(self, value):
     self.driveBase.straight(int(value * 10))
+    wait(50)
 
   def do_backward(self, value):
     self.driveBase.straight(int(-value * 10))
+    wait(50)
 
   def do_left_turn(self, value):
     self.driveBase.turn(-value)
-
+    wait(50)
+  
   def do_right_turn(self, value):
     self.driveBase.turn(value)
-
+    wait(50)
+  
   def do_point_right(self, value):
     self.right.run_angle(self.turn_speed, value)
-
+    wait(50)
+  
   def do_point_left(self, value):
     self.left.run_angle(self.turn_speed, value)
-
+    wait(50)
+  
   def do_left_arm_turn(self, value):
     self.at_left_motor.run_angle(self.arm_speed, value)
-
+    wait(50)
+  
   def do_right_arm_turn(self, value):
     self.at_right_motor.run_angle(self.arm_speed, value)
-
+    wait(50)
+  
   def do_wait(self, value):
     wait(int(value * 1000))
 
-
   def execute(self, text):
+    self.driveBase.use_gyro(True)
     commands = text.split("\n")
     for command in commands:
       command = command.strip()
@@ -157,6 +163,7 @@ class MetalMechRobot:
       elif name == 'RA':  self.do_right_arm_turn(value)
 
       elif name == 'W': self.do_wait(value)
+    self.driveBase.use_gyro(False)
 
 def wait_for_button_release(hub):
   while True:
