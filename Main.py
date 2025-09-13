@@ -5,8 +5,8 @@ from pybricks.robotics import DriveBase
 from pybricks.tools import wait
 
 
-WHEEL_DIAMETER_MM = 62.4
-AXLE_TRACK_MM = 140
+WHEEL_DIAMETER_MM = 62
+AXLE_TRACK_MM = 149
 
 # 기본 속도/가속도 값(직접 단위 사용)
 DEFAULT_STRAIGHT_SPEED = 150   # mm/s
