@@ -80,44 +80,44 @@ class MetalMechRobot:
   def set_straight_speed(self, value):
     self.driveBase.settings(straight_speed=int(value))
 
-  def turn_speed(self, value):
+  def set_turn_speed(self, value):
     self.driveBase.settings(turn_rate=int(value))
     self.turn_speed = int(value)
   
-  def straight_acceleration_speed(self, value):
+  def set_straight_acceleration_speed(self, value):
     self.driveBase.settings(straight_acceleration=int(value))
   
-  def turn_acceleration_speed(self, value):
+  def set_turn_acceleration_speed(self, value):
     self.driveBase.settings(turn_acceleration=int(value))
 
-  def arm_speed(self, value):
+  def set_arm_speed(self, value):
     self.arm_speed = int(value)
 
-  def forward(self, value):
+  def do_forward(self, value):
     self.driveBase.straight(int(value * 10))
 
-  def backward(self, value):
+  def do_backward(self, value):
     self.driveBase.straight(int(-value * 10))
 
-  def left_turn(self, value):
+  def do_left_turn(self, value):
     self.driveBase.turn(-value)
 
-  def right_turn(self, value):
+  def do_right_turn(self, value):
     self.driveBase.turn(value)
 
-  def point_right(self, value):
+  def do_point_right(self, value):
     self.right.run_angle(self.turn_speed, value)
 
-  def point_left(self, value):
+  def do_point_left(self, value):
     self.left.run_angle(self.turn_speed, value)
 
-  def left_arm_turn(self, value):
+  def do_left_arm_turn(self, value):
     self.at_left_motor.run_angle(self.arm_speed, value)
 
-  def right_arm_turn(self, value):
+  def do_right_arm_turn(self, value):
     self.at_right_motor.run_angle(self.arm_speed, value)
 
-  def wait(self, value):
+  def do_wait(self, value):
     wait(int(value * 1000))
 
 
@@ -132,31 +132,31 @@ class MetalMechRobot:
 
       if name == 'SS':  self.set_straight_speed(value)
 
-      elif name == 'ST':  self.turn_speed(value)
+      elif name == 'ST':  self.set_turn_speed(value)
         
-      elif name == 'SA':  self.straight_acceleration_speed(value)
+      elif name == 'SA':  self.set_straight_acceleration_speed(value)
 
-      elif name == 'TA':  self.turn_acceleration_speed(value)
+      elif name == 'TA':  self.set_turn_acceleration_speed(value)
 
-      elif name == 'AS':  self.arm_speed(value)
+      elif name == 'AS':  self.set_arm_speed(value)
 
-      elif name == 'F': self.forward(value)
+      elif name == 'F': self.do_forward(value)
 
-      elif name == 'B': self.backward(value)
+      elif name == 'B': self.do_backward(value)
 
-      elif name == 'L': self.left_turn(value)
+      elif name == 'L': self.do_left_turn(value)
 
-      elif name == 'R': self.right_turn(value)
+      elif name == 'R': self.do_right_turn(value)
 
-      elif name == 'PR':  self.point_right(value) 
+      elif name == 'PR':  self.do_point_right(value) 
 
-      elif name == 'PL':  self.point_left(value)
+      elif name == 'PL':  self.do_point_left(value)
 
-      elif name == 'LA':  self.Left_arm_turn(value)
+      elif name == 'LA':  self.do_left_arm_turn(value)
       
-      elif name == 'RA':  self.right_arm_turn(value)
+      elif name == 'RA':  self.do_right_arm_turn(value)
 
-      elif name == 'W': self.wait(value)
+      elif name == 'W': self.do_wait(value)
 
 def wait_for_button_release(hub):
   while True:
