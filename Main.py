@@ -76,6 +76,51 @@ class MetalMechRobot:
                      turn_acceleration=DEFAULT_TURN_ACCEL)
 
     self.driveBase.use_gyro(True)
+
+  def set_straight_speed(self, value):
+    self.driveBase.settings(straight_speed=int(value))
+
+  def turn_speed(self, value):
+    self.driveBase.settings(turn_rate=int(value))
+    self.turn_speed = int(value)
+  
+  def straight_acceleration_speed(self, value):
+    self.driveBase.settings(straight_acceleration=int(value))
+  
+  def turn_acceleration_speed(self, value):
+    self.driveBase.settings(turn_acceleration=int(value))
+
+  def arm_speed(self, value):
+    self.arm_speed = int(value)
+
+  def forward(self, value):
+    self.driveBase.straight(int(value * 10))
+
+  def backward(self, value):
+    self.driveBase.straight(int(-value * 10))
+
+  def left_turn(self, value):
+    self.driveBase.turn(-value)
+
+  def right_turn(self, value):
+    self.driveBase.turn(value)
+
+  def point_right(self, value):
+    self.right.run_angle(self.turn_speed, value)
+
+  def point_left(self, value):
+    self.left.run_angle(self.turn_speed, value)
+
+  def left_arm_turn(self, value):
+    self.at_left_motor.run_angle(self.arm_speed, value)
+
+  def right_arm_turn(self, value):
+    self.at_right_motor.run_angle(self.arm_speed, value)
+
+  def wait(self, value):
+    wait(int(value * 1000))
+
+
   def execute(self, text):
     commands = text.split("\n")
     for command in commands:
@@ -85,49 +130,33 @@ class MetalMechRobot:
       name, value = command.split(":", 1)
       value = float(value.strip())
 
-      if name == 'SS':  # 직진 속도(mm/s)
-        self.driveBase.settings(straight_speed=int(value))
+      if name == 'SS':  self.set_straight_speed(value)
 
-      elif name == 'ST':  # 회전 속도(deg/s)
-        self.driveBase.settings(turn_rate=int(value))
-        self.turn_speed = int(value)
+      elif name == 'ST':  self.turn_speed(value)
+        
+      elif name == 'SA':  self.straight_acceleration_speed(value)
 
-      elif name == 'SA':  # 악셀러레이션 전진 후진
-        self.driveBase.settings(straight_acceleration=int(value))
+      elif name == 'TA':  self.turn_acceleration_speed(value)
 
-      elif name == 'TA':  # 악셀러레이션 포인트 턴
-        self.driveBase.settings(turn_acceleration=int(value))
+      elif name == 'AS':  self.arm_speed(value)
 
-      elif name == 'AS':  # 어테치먼트 스피드
-        self.arm_speed = int(value)
+      elif name == 'F': self.forward(value)
 
-      elif name == 'F': # 앞으로
-        self.driveBase.straight(int(value * 10))
+      elif name == 'B': self.backward(value)
 
-      elif name == 'B': # 뒤로
-        self.driveBase.straight(int(-value * 10))
+      elif name == 'L': self.left_turn(value)
 
-      elif name == 'L': # 왼쪽 턴
-        self.driveBase.turn(-value)
+      elif name == 'R': self.right_turn(value)
 
-      elif name == 'R': # 오른쪽 턴
-        self.driveBase.turn(value)
+      elif name == 'PR':  self.point_right(value) 
 
-      elif name == 'PR':  # 피봇턴 오른쪽
-        self.right.run_angle(self.turn_speed, value)
+      elif name == 'PL':  self.point_left(value)
 
-      elif name == 'PL':  # 피봇턴 왼쪽
-        self.left.run_angle(self.turn_speed, value)
-
-      elif name == 'LA':  # 왼쪽 모터
-        self.at_left_motor.run_angle(self.arm_speed, value)
+      elif name == 'LA':  self.Left_arm_turn(value)
       
-      elif name == 'RA':  # 오른쪽 모터
-        self.at_right_motor.run_angle(self.arm_speed, value)
+      elif name == 'RA':  self.right_arm_turn(value)
 
-      elif name == 'W': # wait
-        wait(int(value * 1000))
-
+      elif name == 'W': self.wait(value)
 
 def wait_for_button_release(hub):
   while True:
@@ -135,7 +164,6 @@ def wait_for_button_release(hub):
     if len(pressed) == 0:
       break
     wait(300)
-
 
 robot = MetalMechRobot()
 hub = robot.hub
