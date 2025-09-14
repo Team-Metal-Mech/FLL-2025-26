@@ -71,8 +71,8 @@ Each mission file contains one command per line in the form `CODE:VALUE`. Units 
 - `R`: right turn in degrees (positive value)
 - `PR`: point turn using right wheel only (degrees)
 - `PL`: point turn using left wheel only (degrees)
-- `LA`: left auxiliary arm motor rotate (degrees)
-- `RA`: right auxiliary arm motor rotate (degrees)
+- `LA`: left auxiliary arm motor rotate (degrees). Optional non-blocking: `LA:ANGLE:true`
+- `RA`: right auxiliary arm motor rotate (degrees). Optional non-blocking: `RA:ANGLE:true`
 - `AA`: rotate both arm motors together. Accepts one or two values:
   - `AA:X` rotates both arms by `X` degrees.
   - `AA:L:R` rotates left by `L` and right by `R` degrees.
