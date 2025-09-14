@@ -73,6 +73,9 @@ Each mission file contains one command per line in the form `CODE:VALUE`. Units 
 - `PL`: point turn using left wheel only (degrees)
 - `LA`: left auxiliary arm motor rotate (degrees)
 - `RA`: right auxiliary arm motor rotate (degrees)
+- `AA`: rotate both arm motors together. Accepts one or two values:
+  - `AA:X` rotates both arms by `X` degrees.
+  - `AA:L:R` rotates left by `L` and right by `R` degrees.
 - `W`: wait in seconds
 
 Example (`runs/01.txt`):
@@ -86,4 +89,12 @@ AS:700
 RA:-29
 F:64
 L:125
+```
+
+Additional `AA` examples:
+
+```
+AS:600
+AA:90        # both arms +90°
+AA:90:-45    # left +90°, right -45°
 ```

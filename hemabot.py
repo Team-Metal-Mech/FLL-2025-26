@@ -76,7 +76,23 @@ class MetalMechRobot:
   def do_right_arm_turn(self, value):
     self.at_right_motor.run_angle(self.arm_speed, value)
     wait(50)
-  
+
+  def do_arms_turn(self, left_value, right_value=None):
+    # 양팔을 동시에 회전. 한 값만 주면 두 팔에 동일 적용.
+    if right_value is None:
+      right_value = left_value
+
+    # 더 오래 걸리는 쪽을 wait=True로 두어 두 모터 모두 완료될 때까지 대기
+    if abs(left_value) >= abs(right_value):
+      # 왼쪽이 더 오래 걸릴 가능성이 큼: 오른쪽 먼저(비대기), 왼쪽 대기
+      self.at_right_motor.run_angle(self.arm_speed, right_value, wait=False)
+      self.at_left_motor.run_angle(self.arm_speed, left_value, wait=True)
+    else:
+      # 오른쪽이 더 오래 걸릴 가능성이 큼: 왼쪽 먼저(비대기), 오른쪽 대기
+      self.at_left_motor.run_angle(self.arm_speed, left_value, wait=False)
+      self.at_right_motor.run_angle(self.arm_speed, right_value, wait=True)
+    wait(50)
+
   def do_wait(self, value):
     wait(int(value * 1000))
 
@@ -87,34 +103,57 @@ class MetalMechRobot:
       command = command.strip()
       if not command:
         continue
-      name, value = command.split(":", 1)
-      value = float(value.strip())
+      parts = [p.strip() for p in command.split(":")]
+      if len(parts) == 0:
+        continue
+      name = parts[0]
+      args = parts[1:]
 
-      if name == 'SS':  self.set_straight_speed(value)
+      if name == 'SS' and len(args) >= 1:
+        self.set_straight_speed(float(args[0]))
 
-      elif name == 'ST':  self.set_turn_speed(value)
+      elif name == 'ST' and len(args) >= 1:
+        self.set_turn_speed(float(args[0]))
         
-      elif name == 'SA':  self.set_straight_acceleration_speed(value)
+      elif name == 'SA' and len(args) >= 1:
+        self.set_straight_acceleration_speed(float(args[0]))
 
-      elif name == 'TA':  self.set_turn_acceleration_speed(value)
+      elif name == 'TA' and len(args) >= 1:
+        self.set_turn_acceleration_speed(float(args[0]))
 
-      elif name == 'AS':  self.set_arm_speed(value)
+      elif name == 'AS' and len(args) >= 1:
+        self.set_arm_speed(float(args[0]))
 
-      elif name == 'F': self.do_forward(value)
+      elif name == 'F' and len(args) >= 1:
+        self.do_forward(float(args[0]))
 
-      elif name == 'B': self.do_backward(value)
+      elif name == 'B' and len(args) >= 1:
+        self.do_backward(float(args[0]))
 
-      elif name == 'L': self.do_left_turn(value)
+      elif name == 'L' and len(args) >= 1:
+        self.do_left_turn(float(args[0]))
 
-      elif name == 'R': self.do_right_turn(value)
+      elif name == 'R' and len(args) >= 1:
+        self.do_right_turn(float(args[0]))
 
-      elif name == 'PR':  self.do_point_right(value) 
+      elif name == 'PR' and len(args) >= 1:
+        self.do_point_right(float(args[0])) 
 
-      elif name == 'PL':  self.do_point_left(value)
+      elif name == 'PL' and len(args) >= 1:
+        self.do_point_left(float(args[0]))
 
-      elif name == 'LA':  self.do_left_arm_turn(value)
+      elif name == 'LA' and len(args) >= 1:
+        self.do_left_arm_turn(float(args[0]))
       
-      elif name == 'RA':  self.do_right_arm_turn(value)
+      elif name == 'RA' and len(args) >= 1:
+        self.do_right_arm_turn(float(args[0]))
 
-      elif name == 'W': self.do_wait(value)
+      elif name == 'AA' and len(args) >= 1:
+        if len(args) == 1:
+          self.do_arms_turn(float(args[0]))
+        else:
+          self.do_arms_turn(float(args[0]), float(args[1]))
+
+      elif name == 'W' and len(args) >= 1:
+        self.do_wait(float(args[0]))
     self.driveBase.use_gyro(False)
