@@ -69,13 +69,17 @@ class MetalMechRobot:
     self.left.run_angle(self.turn_speed, value)
     wait(50)
   
-  def do_left_arm_turn(self, value):
-    self.at_left_motor.run_angle(self.arm_speed, value)
-    wait(50)
+  def do_left_arm_turn(self, value, nonblock=False):
+    # nonblock=True이면 즉시 반환(wait=False)
+    self.at_left_motor.run_angle(self.arm_speed, value, wait=(not nonblock))
+    if not nonblock:
+      wait(50)
   
-  def do_right_arm_turn(self, value):
-    self.at_right_motor.run_angle(self.arm_speed, value)
-    wait(50)
+  def do_right_arm_turn(self, value, nonblock=False):
+    # nonblock=True이면 즉시 반환(wait=False)
+    self.at_right_motor.run_angle(self.arm_speed, value, wait=(not nonblock))
+    if not nonblock:
+      wait(50)
 
   def do_arms_turn(self, left_value, right_value=None):
     # 양팔을 동시에 회전. 한 값만 주면 두 팔에 동일 적용.
@@ -93,18 +97,6 @@ class MetalMechRobot:
       self.at_right_motor.run_angle(self.arm_speed, right_value, wait=True)
     wait(50)
 
-  def do_wait(self, value):
-    # 대기 중에도 왼쪽 버튼으로 즉시 중지 가능하도록 분할 대기
-    total_ms = int(value * 1000)
-    elapsed = 0
-    step = 20
-    while elapsed < total_ms:
-      if Button.LEFT in self.hub.buttons.pressed():
-        self._emergency_stop()
-        return
-      wait(step)
-      elapsed += step
-
   def execute(self, text):
     self.driveBase.use_gyro(True)
     commands = text.split("#")
@@ -112,10 +104,6 @@ class MetalMechRobot:
       command = command.strip()
       if not command:
         continue
-      # 실행 중 왼쪽 버튼을 누르면 즉시 중지
-      if Button.LEFT in self.hub.buttons.pressed():
-        self._emergency_stop()
-        break
       parts = [p.strip() for p in command.split(":")]
       if len(parts) == 0:
         continue
@@ -156,10 +144,14 @@ class MetalMechRobot:
         self.do_point_left(float(args[0]))
 
       elif name == 'LA' and len(args) >= 1:
-        self.do_left_arm_turn(float(args[0]))
+        angle = float(args[0])
+        nonblock = (len(args) >= 2 and str(args[-1]).lower() == 'true')
+        self.do_left_arm_turn(angle, nonblock)
       
       elif name == 'RA' and len(args) >= 1:
-        self.do_right_arm_turn(float(args[0]))
+        angle = float(args[0])
+        nonblock = (len(args) >= 2 and str(args[-1]).lower() == 'true')
+        self.do_right_arm_turn(angle, nonblock)
 
       elif name == 'AA' and len(args) >= 1:
         if len(args) == 1:
@@ -170,19 +162,3 @@ class MetalMechRobot:
       elif name == 'W' and len(args) >= 1:
         self.do_wait(float(args[0]))
     self.driveBase.use_gyro(False)
-
-  def _emergency_stop(self):
-    try:
-      self.driveBase.stop()
-    except Exception:
-      pass
-    try:
-      self.left.stop()
-      self.right.stop()
-    except Exception:
-      pass
-    try:
-      self.at_left_motor.stop()
-      self.at_right_motor.stop()
-    except Exception:
-      pass
