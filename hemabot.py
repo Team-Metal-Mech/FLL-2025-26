@@ -94,7 +94,16 @@ class MetalMechRobot:
     wait(50)
 
   def do_wait(self, value):
-    wait(int(value * 1000))
+    # 대기 중에도 왼쪽 버튼으로 즉시 중지 가능하도록 분할 대기
+    total_ms = int(value * 1000)
+    elapsed = 0
+    step = 20
+    while elapsed < total_ms:
+      if Button.LEFT in self.hub.buttons.pressed():
+        self._emergency_stop()
+        return
+      wait(step)
+      elapsed += step
 
   def execute(self, text):
     self.driveBase.use_gyro(True)
@@ -103,6 +112,10 @@ class MetalMechRobot:
       command = command.strip()
       if not command:
         continue
+      # 실행 중 왼쪽 버튼을 누르면 즉시 중지
+      if Button.LEFT in self.hub.buttons.pressed():
+        self._emergency_stop()
+        break
       parts = [p.strip() for p in command.split(":")]
       if len(parts) == 0:
         continue
@@ -157,3 +170,19 @@ class MetalMechRobot:
       elif name == 'W' and len(args) >= 1:
         self.do_wait(float(args[0]))
     self.driveBase.use_gyro(False)
+
+  def _emergency_stop(self):
+    try:
+      self.driveBase.stop()
+    except Exception:
+      pass
+    try:
+      self.left.stop()
+      self.right.stop()
+    except Exception:
+      pass
+    try:
+      self.at_left_motor.stop()
+      self.at_right_motor.stop()
+    except Exception:
+      pass
