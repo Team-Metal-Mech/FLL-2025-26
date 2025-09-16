@@ -36,11 +36,8 @@ class MetalMechRobot:
     self.driveBase.settings(turn_rate=int(value))
     self.turn_speed = int(value)
   
-  def set_straight_acceleration_speed(self, value):
-    self.driveBase.settings(straight_acceleration=int(value))
-  
-  def set_turn_acceleration_speed(self, value):
-    self.driveBase.settings(turn_acceleration=int(value))
+  def set_acceleration_speed(self, value):
+    self.driveBase.settings(straight_acceleration=int(value),turn_acceleration=int(value))
 
   def set_arm_speed(self, value):
     self.arm_speed = int(value)
