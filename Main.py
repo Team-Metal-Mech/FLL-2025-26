@@ -4,16 +4,6 @@ from pybricks.tools import wait
 # ⬇️ run_data 리스트는 upload.sh에서 자동으로 삽입됩니다.
 run_data = []
 
-
-try:
-  from pybricks import system  # 허브에서만 존재
-except ImportError:
-  class _SystemStub:
-    def set_stop_button(self, *_args, **_kwargs):
-      pass
-
-  system = _SystemStub()
-
 def wait_for_button_release(hub):
   while True:
     pressed = hub.buttons.pressed()
@@ -24,8 +14,6 @@ def wait_for_button_release(hub):
 robot = MetalMechRobot()
 hub = robot.hub
 
-system.set_stop_button(None)
-
 selected = 0
 max_index = len(run_data) - 1
 
@@ -35,16 +23,12 @@ while True:
     while True:
         p = hub.buttons.pressed()
         if Button.LEFT in p:
-            selected = (selected - 1) % (max_index + 1)
-            hub.display.number(selected + 1)
             wait_for_button_release(hub)
             break
         elif Button.RIGHT in p:
             selected = (selected + 1) % (max_index + 1)
             hub.display.number(selected + 1)
             wait_for_button_release(hub)
-        elif Button.CENTER in p:
-            wait_for_button_release(hub)
-            robot.execute(run_data[selected])
-            wait(300)
-            break
+    robot.execute(run_data[selected])
+    wait(300)
+
