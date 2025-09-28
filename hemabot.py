@@ -7,7 +7,6 @@ from pybricks.tools import wait
 
 WHEEL_DIAMETER_MM = 62
 AXLE_TRACK_MM = 149
-
 # 기본 속도/가속도 값(직접 단위 사용)
 DEFAULT_STRAIGHT_SPEED = 150   # mm/s
 DEFAULT_STRAIGHT_ACCEL = 300   # mm/s^2
@@ -41,6 +40,12 @@ class MetalMechRobot:
 
   def set_arm_speed(self, value):
     self.arm_speed = int(value)
+
+  def set_straight_acceleration_speed(self, value):
+    self.driveBase.settings(straight_acceleration=int(value))
+
+  def set_turn_acceleration_speed(self, value):
+    self.driveBase.settings(turn_acceleration=int(value))
 
   def do_forward(self, value):
     self.driveBase.straight(int(value * 10))
@@ -94,7 +99,11 @@ class MetalMechRobot:
       self.at_right_motor.run_angle(self.arm_speed, right_value, wait=True)
     wait(50)
 
+    def do_wait(self, value):
+      wait(value * 1000)
+
   def execute(self, text):
+    self.hub.imu.reset_heading(0)
     self.driveBase.use_gyro(True)
     commands = text.split("#")
     for command in commands:
