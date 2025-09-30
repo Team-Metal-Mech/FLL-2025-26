@@ -1,6 +1,6 @@
 from pybricks.hubs import PrimeHub
 from pybricks.pupdevices import Motor
-from pybricks.parameters import Port, Direction
+from pybricks.parameters import Direction, Port, Stop
 from pybricks.robotics import DriveBase
 from pybricks.tools import wait
 
@@ -22,6 +22,7 @@ class MetalMechRobot:
     self.at_left_motor = Motor(Port.C)
     self.at_right_motor = Motor(Port.D)
     self.turn_speed = 200
+    self.stop_requested = False
     # 기본 설정 적용
     self.driveBase.settings(straight_speed=DEFAULT_STRAIGHT_SPEED,
                      straight_acceleration=DEFAULT_STRAIGHT_ACCEL,
@@ -99,14 +100,29 @@ class MetalMechRobot:
       self.at_right_motor.run_angle(self.arm_speed, right_value, wait=True)
     wait(50)
 
-    def do_wait(self, value):
-      wait(value * 1000)
+  def do_wait(self, value):
+    wait(value * 1000)
+
+  def stop_all(self):
+    self.driveBase.stop(Stop.BRAKE)
+    for motor in (self.left, self.right, self.at_left_motor, self.at_right_motor):
+      motor.stop(Stop.BRAKE)
+
+  def request_stop(self):
+    self.stop_requested = True
+    self.stop_all()
+
+  def clear_stop_request(self):
+    self.stop_requested = False
 
   def execute(self, text):
+    self.clear_stop_request()
     self.hub.imu.reset_heading(0)
     self.driveBase.use_gyro(True)
     commands = text.split("#")
     for command in commands:
+      if self.stop_requested:
+        break
       command = command.strip()
       if not command:
         continue
@@ -168,3 +184,4 @@ class MetalMechRobot:
       elif name == 'W' and len(args) >= 1:
         self.do_wait(float(args[0]))
     self.driveBase.use_gyro(False)
+    self.stop_all()
