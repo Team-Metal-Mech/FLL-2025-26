@@ -1,6 +1,6 @@
 from pybricks.hubs import PrimeHub
 from pybricks.pupdevices import Motor
-from pybricks.parameters import Direction, Port, Stop
+from pybricks.parameters import Direction, Port
 from pybricks.robotics import DriveBase
 from pybricks.tools import wait
 
@@ -104,9 +104,9 @@ class MetalMechRobot:
     wait(value * 1000)
 
   def stop_all(self):
-    self.driveBase.stop(Stop.BRAKE)
+    self.driveBase.stop()
     for motor in (self.left, self.right, self.at_left_motor, self.at_right_motor):
-      motor.stop(Stop.BRAKE)
+      motor.brake()
 
   def request_stop(self):
     self.stop_requested = True
