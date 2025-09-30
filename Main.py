@@ -18,17 +18,25 @@ selected = 0
 max_index = len(run_data) - 1
 
 while True:
+    hub.system.set_stop_button(None)
     hub.display.number(selected + 1)
 
     while True:
         p = hub.buttons.pressed()
         if Button.LEFT in p:
-            wait_for_button_release(hub)
-            break
+          selected = (selected + 1) % (max_index + 1)
+          hub.display.number(selected - 1)
+          wait_for_button_release(hub)
+        
         elif Button.RIGHT in p:
-            selected = (selected + 1) % (max_index + 1)
-            hub.display.number(selected + 1)
-            wait_for_button_release(hub)
+          selected = (selected + 1) % (max_index + 1)
+          hub.display.number(selected + 1)
+          wait_for_button_release(hub)
+
+        elif Button.CENTER in p:
+          wait_for_button_release(hub)
+          hub.system.set_stop_button(Button.CENTER) 
+          break
 
     robot.execute(run_data[selected])
     wait(300)

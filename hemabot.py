@@ -1,13 +1,12 @@
 from pybricks.hubs import PrimeHub
 from pybricks.pupdevices import Motor
-from pybricks.parameters import Port, Direction
+from pybricks.parameters import Direction, Port, Stop
 from pybricks.robotics import DriveBase
 from pybricks.tools import wait
 
 
 WHEEL_DIAMETER_MM = 62
 AXLE_TRACK_MM = 149
-
 # 기본 속도/가속도 값(직접 단위 사용)
 DEFAULT_STRAIGHT_SPEED = 150   # mm/s
 DEFAULT_STRAIGHT_ACCEL = 300   # mm/s^2
@@ -23,6 +22,7 @@ class MetalMechRobot:
     self.at_left_motor = Motor(Port.C)
     self.at_right_motor = Motor(Port.D)
     self.turn_speed = 200
+    self.stop_requested = False
     # 기본 설정 적용
     self.driveBase.settings(straight_speed=DEFAULT_STRAIGHT_SPEED,
                      straight_acceleration=DEFAULT_STRAIGHT_ACCEL,
@@ -36,14 +36,17 @@ class MetalMechRobot:
     self.driveBase.settings(turn_rate=int(value))
     self.turn_speed = int(value)
   
-  def set_straight_acceleration_speed(self, value):
-    self.driveBase.settings(straight_acceleration=int(value))
-  
-  def set_turn_acceleration_speed(self, value):
-    self.driveBase.settings(turn_acceleration=int(value))
+  def set_acceleration_speed(self, value):
+    self.driveBase.settings(straight_acceleration=int(value),turn_acceleration=int(value))
 
   def set_arm_speed(self, value):
     self.arm_speed = int(value)
+
+  def set_straight_acceleration_speed(self, value):
+    self.driveBase.settings(straight_acceleration=int(value))
+
+  def set_turn_acceleration_speed(self, value):
+    self.driveBase.settings(turn_acceleration=int(value))
 
   def do_forward(self, value):
     self.driveBase.straight(int(value * 10))
@@ -97,10 +100,29 @@ class MetalMechRobot:
       self.at_right_motor.run_angle(self.arm_speed, right_value, wait=True)
     wait(50)
 
+  def do_wait(self, value):
+    wait(value * 1000)
+
+  def stop_all(self):
+    self.driveBase.stop(Stop.BRAKE)
+    for motor in (self.left, self.right, self.at_left_motor, self.at_right_motor):
+      motor.stop(Stop.BRAKE)
+
+  def request_stop(self):
+    self.stop_requested = True
+    self.stop_all()
+
+  def clear_stop_request(self):
+    self.stop_requested = False
+
   def execute(self, text):
+    self.clear_stop_request()
+    self.hub.imu.reset_heading(0)
     self.driveBase.use_gyro(True)
     commands = text.split("#")
     for command in commands:
+      if self.stop_requested:
+        break
       command = command.strip()
       if not command:
         continue
@@ -162,3 +184,4 @@ class MetalMechRobot:
       elif name == 'W' and len(args) >= 1:
         self.do_wait(float(args[0]))
     self.driveBase.use_gyro(False)
+    self.stop_all()
