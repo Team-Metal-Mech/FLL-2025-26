@@ -22,6 +22,7 @@ class MetalMechRobot:
     self.at_left_motor = Motor(Port.C)
     self.at_right_motor = Motor(Port.D)
     self.turn_speed = 200
+    self.straight_speed = DEFAULT_STRAIGHT_SPEED
     self.stop_requested = False
     # 기본 설정 적용
     self.driveBase.settings(straight_speed=DEFAULT_STRAIGHT_SPEED,
@@ -30,7 +31,8 @@ class MetalMechRobot:
                      turn_acceleration=DEFAULT_TURN_ACCEL)
 
   def set_straight_speed(self, value):
-    self.driveBase.settings(straight_speed=int(value))
+    self.straight_speed = int(value)
+    self.driveBase.settings(straight_speed=self.straight_speed)
 
   def set_turn_speed(self, value):
     self.driveBase.settings(turn_rate=int(value))
@@ -115,6 +117,39 @@ class MetalMechRobot:
   def clear_stop_request(self):
     self.stop_requested = False
 
+  def gyro_straight(
+      self,
+      wheel_degrees,
+      speed=None,
+      target_heading=None,
+      kp=3.0,
+      max_turn=180,
+      loop_delay_ms=10,
+  ):
+    if target_heading is None:
+      target_heading = self.hub.imu.heading()
+
+    if speed is not None:
+      self.set_straight_speed(speed)
+
+    straight_speed = abs(self.straight_speed)
+    direction = 1 if wheel_degrees >= 0 else -1
+    target_angle = abs(wheel_degrees)
+
+    self.driveBase.reset()
+
+    while abs(self.driveBase.angle()) < target_angle and not self.stop_requested:
+      heading = self.hub.imu.heading()
+      error = (target_heading - heading + 180) % 360 - 180
+
+      correction = kp * error
+      correction = max(-max_turn, min(max_turn, correction))
+
+      self.driveBase.drive(direction * straight_speed, correction)
+      wait(loop_delay_ms)
+
+    self.stop_all()
+
   def execute(self, text):
     self.clear_stop_request()
     self.hub.imu.reset_heading(0)
@@ -183,5 +218,19 @@ class MetalMechRobot:
 
       elif name == 'W' and len(args) >= 1:
         self.do_wait(float(args[0]))
+
+      elif name == 'GS' and len(args) >= 1:
+        wheel_degrees = float(args[0])
+        speed = float(args[1]) if len(args) >= 2 and args[1] else None
+
+        target_heading = None
+        if len(args) >= 3 and args[2]:
+          target_heading = float(args[2])
+
+        self.gyro_straight(
+          wheel_degrees,
+          speed=speed,
+          target_heading=target_heading,
+        )
     self.driveBase.use_gyro(False)
     self.stop_all()
