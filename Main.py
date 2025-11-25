@@ -1,3 +1,4 @@
+from terra_script import TerraScript
 from pybricks.parameters import Button
 from pybricks.tools import wait
 
@@ -11,7 +12,7 @@ def wait_for_button_release(hub):
       break
     wait(300)
 
-robot = MetalMechRobot()
+robot = TerraScript()
 hub = robot.hub
 
 selected = 0

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-MAIN_PY="main.py"
-ROBOT_PY="hemabot.py"
+MAIN_PY="Main.py"
+ROBOT_PY="terra_script.py"
 RUN_DIR="runs"
 OUTFILE="_output.py"
 

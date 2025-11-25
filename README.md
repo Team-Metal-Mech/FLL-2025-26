@@ -18,7 +18,7 @@ This repository contains a small Pybricks-based control program for a LEGO Spike
 - Purpose: carry over any imports used by the UI loop (e.g., `Button`, `wait`).
 
 2) Robot core from `hemabot.py`
-- Appends the full `hemabot.py` so the robot class (`MetalMechRobot`) and the command executor are available.
+- Appends the full `hemabot.py` so the robot class (`TerraScript`) and the command executor are available.
 
 3) Runtime data and the rest of `main.py`
 - Builds `run_data` by reading and concatenating all `runs/*.txt` files (sorted). Newlines in each mission are converted to `#` so a mission becomes a single string. Double quotes are escaped.

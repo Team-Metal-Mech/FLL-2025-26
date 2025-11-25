@@ -13,7 +13,7 @@ DEFAULT_STRAIGHT_ACCEL = 300   # mm/s^2
 DEFAULT_TURN_RATE = 180        # deg/s
 DEFAULT_TURN_ACCEL = 180       # deg/s^2
 
-class MetalMechRobot:
+class TerraScript:
   def __init__(self):
     self.hub = PrimeHub()
     self.left = Motor(Port.E, Direction.COUNTERCLOCKWISE)
@@ -51,12 +51,10 @@ class MetalMechRobot:
     self.driveBase.settings(turn_acceleration=int(value))
 
   def do_forward(self, value):
-    self.driveBase.straight(int(value * 10))
-    wait(50)
+    self._drive_distance(int(value * 10))
 
   def do_backward(self, value):
-    self.driveBase.straight(int(-value * 10))
-    wait(50)
+    self._drive_distance(int(-value * 10))
 
   def do_left_turn(self, value):
     self.driveBase.turn(-value)
@@ -73,6 +71,18 @@ class MetalMechRobot:
   def do_point_left(self, value):
     self.left.run_angle(self.turn_speed, value)
     wait(50)
+
+  def _drive_distance(self, distance_mm):
+    if distance_mm == 0:
+      return
+
+    if self._check_stop():
+      return
+
+    self.driveBase.straight(distance_mm)
+
+    if not self.stop_requested:
+      wait(50)
   
   def do_left_arm_turn(self, value, nonblock=False):
     # nonblock=True이면 즉시 반환(wait=False)
@@ -103,7 +113,12 @@ class MetalMechRobot:
     wait(50)
 
   def do_wait(self, value):
-    wait(value * 1000)
+    remaining = int(value * 1000)
+    slice_ms = 100
+    while remaining > 0 and not self._check_stop():
+      step = min(slice_ms, remaining)
+      wait(step)
+      remaining -= step
 
   def stop_all(self):
     self.driveBase.stop()
@@ -116,6 +131,16 @@ class MetalMechRobot:
 
   def clear_stop_request(self):
     self.stop_requested = False
+
+  def _check_stop(self):
+    if self.stop_requested:
+      return True
+    if Button.CENTER in self.hub.buttons.pressed():
+      self.request_stop()
+      while Button.CENTER in self.hub.buttons.pressed():
+        wait(20)
+      return True
+    return False
 
   def gyro_straight(
       self,
@@ -138,7 +163,9 @@ class MetalMechRobot:
 
     self.driveBase.reset()
 
-    while abs(self.driveBase.angle()) < target_angle and not self.stop_requested:
+    while abs(self.driveBase.angle()) < target_angle:
+      if self._check_stop():
+        break
       heading = self.hub.imu.heading()
       error = (target_heading - heading + 180) % 360 - 180
 
@@ -153,10 +180,11 @@ class MetalMechRobot:
   def execute(self, text):
     self.clear_stop_request()
     self.hub.imu.reset_heading(0)
+    wait(200)  # 자이로 안정화 대기
     self.driveBase.use_gyro(True)
     commands = text.split("#")
     for command in commands:
-      if self.stop_requested:
+      if self._check_stop():
         break
       command = command.strip()
       if not command:
