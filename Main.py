@@ -25,8 +25,8 @@ while True:
     while True:
         p = hub.buttons.pressed()
         if Button.LEFT in p:
-          selected = (selected + 1) % (max_index + 1)
-          hub.display.number(selected - 1)
+          selected = (selected - 1) % (max_index + 1)
+          hub.display.number(selected + 1)
           wait_for_button_release(hub)
         
         elif Button.RIGHT in p:
@@ -39,5 +39,12 @@ while True:
           hub.system.set_stop_button(Button.CENTER) 
           break
 
-    robot.execute(run_data[selected])
+    try:
+      robot.execute(run_data[selected])
+    except SystemExit:
+      # STOP 버튼(CENTER)으로 중단하면 선택 화면으로 복귀
+      robot.driveBase.use_gyro(False)
+      robot.stop_all()
+    finally:
+      hub.system.set_stop_button(None)
     wait(300)

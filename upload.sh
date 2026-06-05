@@ -12,7 +12,7 @@ cat $ROBOT_PY >> $OUTFILE
 echo -e "\n\n" >> $OUTFILE
 echo "run_data = [" >> $OUTFILE
 for f in $(ls $RUN_DIR/*.txt | sort); do
-  ESCAPED=$(tr '\n' '#' < "$f" | sed 's/"/\\\"/g')
+  ESCAPED=$(grep -v '^[[:space:]]*//' "$f" | tr '\n' '#' | sed 's/"/\\\"/g')
   echo "  \"$ESCAPED\"," >> $OUTFILE
 done
 echo "]" >> $OUTFILE

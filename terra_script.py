@@ -1,12 +1,14 @@
 from pybricks.hubs import PrimeHub
-from pybricks.pupdevices import Motor
-from pybricks.parameters import Direction, Port
+from pybricks.pupdevices import Motor, ColorSensor
+from pybricks.parameters import Button, Direction, Port
 from pybricks.robotics import DriveBase
 from pybricks.tools import wait
 
 
 WHEEL_DIAMETER_MM = 62
 AXLE_TRACK_MM = 149
+# 팔 모터 대기 제한 시간(ms): 설정 시에만 사용됨
+ARM_TIMEOUT_MS = 3000
 # 기본 속도/가속도 값(직접 단위 사용)
 DEFAULT_STRAIGHT_SPEED = 150   # mm/s
 DEFAULT_STRAIGHT_ACCEL = 300   # mm/s^2
@@ -21,9 +23,13 @@ class TerraScript:
     self.driveBase = DriveBase(self.left, self.right, WHEEL_DIAMETER_MM, AXLE_TRACK_MM)
     self.at_left_motor = Motor(Port.C)
     self.at_right_motor = Motor(Port.D)
+    # 좌/우 라인트레이스 센서(기본 포트 A, B)
+    self.left_color = ColorSensor(Port.A)
+    self.right_color = ColorSensor(Port.B)
     self.turn_speed = 200
     self.straight_speed = DEFAULT_STRAIGHT_SPEED
     self.stop_requested = False
+    self.arm_timeout_ms = None
     # 기본 설정 적용
     self.driveBase.settings(straight_speed=DEFAULT_STRAIGHT_SPEED,
                      straight_acceleration=DEFAULT_STRAIGHT_ACCEL,
@@ -43,6 +49,12 @@ class TerraScript:
 
   def set_arm_speed(self, value):
     self.arm_speed = int(value)
+  
+  def set_arm_timeout(self, seconds):
+    if seconds is None or float(seconds) <= 0:
+      self.arm_timeout_ms = None
+      return
+    self.arm_timeout_ms = int(float(seconds) * 1000)
 
   def set_straight_acceleration_speed(self, value):
     self.driveBase.settings(straight_acceleration=int(value))
@@ -86,30 +98,58 @@ class TerraScript:
   
   def do_left_arm_turn(self, value, nonblock=False):
     # nonblock=True이면 즉시 반환(wait=False)
-    self.at_left_motor.run_angle(self.arm_speed, value, wait=(not nonblock))
+    self.at_left_motor.run_angle(self.arm_speed, value, wait=False)
     if not nonblock:
-      wait(50)
+      self._wait_arm_or_timeout([self.at_left_motor])
   
   def do_right_arm_turn(self, value, nonblock=False):
     # nonblock=True이면 즉시 반환(wait=False)
-    self.at_right_motor.run_angle(self.arm_speed, value, wait=(not nonblock))
+    self.at_right_motor.run_angle(self.arm_speed, value, wait=False)
     if not nonblock:
-      wait(50)
+      self._wait_arm_or_timeout([self.at_right_motor])
 
   def do_arms_turn(self, left_value, right_value=None):
     # 양팔을 동시에 회전. 한 값만 주면 두 팔에 동일 적용.
     if right_value is None:
       right_value = left_value
 
-    # 더 오래 걸리는 쪽을 wait=True로 두어 두 모터 모두 완료될 때까지 대기
-    if abs(left_value) >= abs(right_value):
-      # 왼쪽이 더 오래 걸릴 가능성이 큼: 오른쪽 먼저(비대기), 왼쪽 대기
-      self.at_right_motor.run_angle(self.arm_speed, right_value, wait=False)
-      self.at_left_motor.run_angle(self.arm_speed, left_value, wait=True)
-    else:
-      # 오른쪽이 더 오래 걸릴 가능성이 큼: 왼쪽 먼저(비대기), 오른쪽 대기
-      self.at_left_motor.run_angle(self.arm_speed, left_value, wait=False)
-      self.at_right_motor.run_angle(self.arm_speed, right_value, wait=True)
+    self.at_left_motor.run_angle(self.arm_speed, left_value, wait=False)
+    self.at_right_motor.run_angle(self.arm_speed, right_value, wait=False)
+    self._wait_arm_or_timeout([self.at_left_motor, self.at_right_motor])
+
+  def _wait_arm_or_timeout(self, motors):
+    # 타임아웃 미설정 시: 완료될 때까지 대기
+    if self.arm_timeout_ms is None:
+      while not self._check_stop():
+        busy = False
+        for motor in motors:
+          if not motor.control.done():
+            busy = True
+            break
+        if not busy:
+          wait(50)
+          return
+        wait(50)
+      return
+
+    timeout_ms = self.arm_timeout_ms
+    elapsed = 0
+    slice_ms = 50
+    while elapsed < timeout_ms and not self._check_stop():
+      busy = False
+      for motor in motors:
+        if not motor.control.done():
+          busy = True
+          break
+      if not busy:
+        wait(50)
+        return
+      wait(slice_ms)
+      elapsed += slice_ms
+
+    # 제한시간 초과 시 모터 정지
+    for motor in motors:
+      motor.stop()
     wait(50)
 
   def do_wait(self, value):
@@ -177,8 +217,54 @@ class TerraScript:
 
     self.stop_all()
 
+  def _is_black(self, sensor, threshold):
+    return sensor.reflection() <= threshold
+
+  def color_allign(
+      self,
+      threshold=15,
+      max_forward_mm=600,
+      max_align_ms=1500,
+      loop_delay_ms=20,
+  ):
+    approach = self.straight_speed
+    align = self.straight_speed
+
+    self.driveBase.reset()
+    self.driveBase.drive(approach, 0)
+    while not self._check_stop():
+      left_on = self._is_black(self.left_color, threshold)
+      right_on = self._is_black(self.right_color, threshold)
+      if left_on or right_on:
+        break
+      if abs(self.driveBase.distance()) >= max_forward_mm:
+        break
+      wait(loop_delay_ms)
+    self.driveBase.stop()
+    wait(30)
+
+    elapsed = 0
+    while elapsed < max_align_ms and not self._check_stop():
+      left_on = self._is_black(self.left_color, threshold)
+      right_on = self._is_black(self.right_color, threshold)
+      if left_on and right_on:
+        break
+
+      self.left.run(0 if left_on else align)
+      self.right.run(0 if right_on else align)
+
+      wait(loop_delay_ms)
+      elapsed += loop_delay_ms
+
+    self.left.stop()
+    self.right.stop()
+    self.driveBase.stop()
+
   def execute(self, text):
     self.clear_stop_request()
+    # 이전 실행에서 자이로 사용 중일 수 있어 안전하게 정지/해제
+    self.driveBase.stop()
+    self.driveBase.use_gyro(False)
     self.hub.imu.reset_heading(0)
     wait(200)  # 자이로 안정화 대기
     self.driveBase.use_gyro(True)
@@ -209,6 +295,9 @@ class TerraScript:
 
       elif name == 'AS' and len(args) >= 1:
         self.set_arm_speed(float(args[0]))
+      
+      elif name == 'AT' and len(args) >= 1:
+        self.set_arm_timeout(float(args[0]))
 
       elif name == 'F' and len(args) >= 1:
         self.do_forward(float(args[0]))
@@ -260,5 +349,9 @@ class TerraScript:
           speed=speed,
           target_heading=target_heading,
         )
+      
+      elif name == 'CA':
+        threshold = float(args[0]) if len(args) >= 1 and args[0] else 15
+        self.color_allign(threshold=threshold)
     self.driveBase.use_gyro(False)
     self.stop_all()
