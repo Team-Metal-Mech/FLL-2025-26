@@ -12,7 +12,7 @@ ARM_TIMEOUT_MS = 3000
 # 기본 속도/가속도 값(직접 단위 사용)
 DEFAULT_STRAIGHT_SPEED = 150   # mm/s
 DEFAULT_STRAIGHT_ACCEL = 300   # mm/s^2
-DEFAULT_TURN_RATE = 180        # deg/s
+DEFAULT_TURN_RATE = 150        # deg/s
 DEFAULT_TURN_ACCEL = 180       # deg/s^2
 
 class TerraScript:
@@ -262,7 +262,6 @@ class TerraScript:
 
   def execute(self, text):
     self.clear_stop_request()
-    # 이전 실행에서 자이로 사용 중일 수 있어 안전하게 정지/해제
     self.driveBase.stop()
     self.driveBase.use_gyro(False)
     self.hub.imu.reset_heading(0)
