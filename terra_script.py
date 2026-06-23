@@ -76,7 +76,8 @@ class TerraScript:
       h1 = self.hub.imu.heading()
       wait(10)
       h2 = self.hub.imu.heading()
-      if abs(h2 - h1) < threshold:
+      diff = abs(h2 - h1)
+      if min(diff, 360 - diff) < threshold:
         return
 
   def do_left_turn(self, value):
@@ -307,6 +308,7 @@ class TerraScript:
     )
     self.straight_speed = DEFAULT_STRAIGHT_SPEED
     self.arm_speed = DEFAULT_ARM_SPEED
+    self.arm_timeout_ms = None
     self.driveBase.use_gyro(False)
     self._wait_gyro_settle(threshold=0.5, max_ms=2000)
     self.hub.imu.reset_heading(0)
