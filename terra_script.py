@@ -308,8 +308,9 @@ class TerraScript:
     self.straight_speed = DEFAULT_STRAIGHT_SPEED
     self.arm_speed = DEFAULT_ARM_SPEED
     self.driveBase.use_gyro(False)
+    self._wait_gyro_settle(threshold=0.5, max_ms=2000)
     self.hub.imu.reset_heading(0)
-    wait(500)  # 자이로 안정화 대기
+    wait(200)
     self.driveBase.use_gyro(True)
     commands = text.split("#")
     for command in commands:
