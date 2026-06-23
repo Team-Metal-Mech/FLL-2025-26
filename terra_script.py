@@ -1,6 +1,6 @@
 from pybricks.hubs import PrimeHub
 from pybricks.pupdevices import Motor, ColorSensor
-from pybricks.parameters import Button, Direction, Port
+from pybricks.parameters import Button, Direction, Port, Stop
 from pybricks.robotics import DriveBase
 from pybricks.tools import wait
 
@@ -14,6 +14,8 @@ DEFAULT_STRAIGHT_SPEED = 150   # mm/s
 DEFAULT_STRAIGHT_ACCEL = 300   # mm/s^2
 DEFAULT_TURN_RATE = 150        # deg/s
 DEFAULT_TURN_ACCEL = 180       # deg/s^2
+DEFAULT_ARM_SPEED = 200        # deg/s
+COLOR_ALIGN_SPEED = 120        # mm/s — 라인 정렬 전용 고정 속도
 
 class TerraScript:
   def __init__(self):
@@ -28,6 +30,7 @@ class TerraScript:
     self.right_color = ColorSensor(Port.B)
     self.turn_speed = 200
     self.straight_speed = DEFAULT_STRAIGHT_SPEED
+    self.arm_speed = DEFAULT_ARM_SPEED
     self.stop_requested = False
     self.arm_timeout_ms = None
     # 기본 설정 적용
@@ -63,25 +66,33 @@ class TerraScript:
     self.driveBase.settings(turn_acceleration=int(value))
 
   def do_forward(self, value):
-    self._drive_distance(int(value * 10))
+    self._drive_distance(round(value * 10))
 
   def do_backward(self, value):
-    self._drive_distance(int(-value * 10))
+    self._drive_distance(round(-value * 10))
+
+  def _wait_gyro_settle(self, threshold=1, max_ms=200):
+    for _ in range(max_ms // 10):
+      h1 = self.hub.imu.heading()
+      wait(10)
+      h2 = self.hub.imu.heading()
+      if abs(h2 - h1) < threshold:
+        return
 
   def do_left_turn(self, value):
-    self.driveBase.turn(-value)
-    wait(50)
-  
+    self.driveBase.turn(-value, then=Stop.HOLD)
+    self._wait_gyro_settle()
+
   def do_right_turn(self, value):
-    self.driveBase.turn(value)
-    wait(50)
-  
+    self.driveBase.turn(value, then=Stop.HOLD)
+    self._wait_gyro_settle()
+
   def do_point_right(self, value):
-    self.right.run_angle(self.turn_speed, value)
+    self.right.run_angle(self.turn_speed, value, then=Stop.HOLD)
     wait(50)
-  
+
   def do_point_left(self, value):
-    self.left.run_angle(self.turn_speed, value)
+    self.left.run_angle(self.turn_speed, value, then=Stop.HOLD)
     wait(50)
 
   def _drive_distance(self, distance_mm):
@@ -91,30 +102,42 @@ class TerraScript:
     if self._check_stop():
       return
 
-    self.driveBase.straight(distance_mm)
+    self.driveBase.straight(distance_mm, then=Stop.HOLD)
 
     if not self.stop_requested:
       wait(50)
   
   def do_left_arm_turn(self, value, nonblock=False):
-    # nonblock=True이면 즉시 반환(wait=False)
-    self.at_left_motor.run_angle(self.arm_speed, value, wait=False)
+    self.at_left_motor.run_angle(self.arm_speed, value, then=Stop.HOLD, wait=False)
     if not nonblock:
       self._wait_arm_or_timeout([self.at_left_motor])
-  
+
   def do_right_arm_turn(self, value, nonblock=False):
-    # nonblock=True이면 즉시 반환(wait=False)
-    self.at_right_motor.run_angle(self.arm_speed, value, wait=False)
+    self.at_right_motor.run_angle(self.arm_speed, value, then=Stop.HOLD, wait=False)
     if not nonblock:
       self._wait_arm_or_timeout([self.at_right_motor])
+
+  def do_left_arm_home(self, speed=None, duty_limit=30):
+    # 스톨 감지(run_until_stalled)로 하드스톱까지 이동 후 0점 재설정
+    # speed 부호로 이동 방향 결정(미지정 시 arm_speed의 반대 방향으로 기본 설정)
+    spd = float(speed) if speed is not None else -self.arm_speed
+    self.at_left_motor.run_until_stalled(spd, then=Stop.HOLD, duty_limit=int(duty_limit))
+    self.at_left_motor.reset_angle(0)
+    wait(50)
+
+  def do_right_arm_home(self, speed=None, duty_limit=30):
+    spd = float(speed) if speed is not None else -self.arm_speed
+    self.at_right_motor.run_until_stalled(spd, then=Stop.HOLD, duty_limit=int(duty_limit))
+    self.at_right_motor.reset_angle(0)
+    wait(50)
 
   def do_arms_turn(self, left_value, right_value=None):
     # 양팔을 동시에 회전. 한 값만 주면 두 팔에 동일 적용.
     if right_value is None:
       right_value = left_value
 
-    self.at_left_motor.run_angle(self.arm_speed, left_value, wait=False)
-    self.at_right_motor.run_angle(self.arm_speed, right_value, wait=False)
+    self.at_left_motor.run_angle(self.arm_speed, left_value, then=Stop.HOLD, wait=False)
+    self.at_right_motor.run_angle(self.arm_speed, right_value, then=Stop.HOLD, wait=False)
     self._wait_arm_or_timeout([self.at_left_motor, self.at_right_motor])
 
   def _wait_arm_or_timeout(self, motors):
@@ -184,10 +207,11 @@ class TerraScript:
 
   def gyro_straight(
       self,
-      wheel_degrees,
+      distance_mm,
       speed=None,
       target_heading=None,
-      kp=3.0,
+      kp=2.0,
+      kd=1.5,
       max_turn=180,
       loop_delay_ms=10,
   ):
@@ -198,24 +222,36 @@ class TerraScript:
       self.set_straight_speed(speed)
 
     straight_speed = abs(self.straight_speed)
-    direction = 1 if wheel_degrees >= 0 else -1
-    target_angle = abs(wheel_degrees)
+    direction = 1 if distance_mm >= 0 else -1
+    target_distance = abs(distance_mm)
+    decel_zone = min(150, target_distance * 0.3)
+    min_speed = 80
+    prev_error = 0
 
     self.driveBase.reset()
 
-    while abs(self.driveBase.angle()) < target_angle:
+    while abs(self.driveBase.distance()) < target_distance:
       if self._check_stop():
         break
       heading = self.hub.imu.heading()
       error = (target_heading - heading + 180) % 360 - 180
 
-      correction = kp * error
+      correction = kp * error + kd * (error - prev_error)
       correction = max(-max_turn, min(max_turn, correction))
+      prev_error = error
 
-      self.driveBase.drive(direction * straight_speed, correction)
+      remaining = target_distance - abs(self.driveBase.distance())
+      if remaining <= decel_zone:
+        run_speed = max(min_speed, int(straight_speed * remaining / decel_zone))
+      else:
+        run_speed = straight_speed
+
+      self.driveBase.drive(direction * run_speed, correction)
       wait(loop_delay_ms)
 
-    self.stop_all()
+    self.left.hold()
+    self.right.hold()
+    wait(50)
 
   def _is_black(self, sensor, threshold):
     return sensor.reflection() <= threshold
@@ -228,7 +264,7 @@ class TerraScript:
       loop_delay_ms=20,
   ):
     approach = self.straight_speed
-    align = self.straight_speed
+    align = COLOR_ALIGN_SPEED
 
     self.driveBase.reset()
     self.driveBase.drive(approach, 0)
@@ -263,9 +299,17 @@ class TerraScript:
   def execute(self, text):
     self.clear_stop_request()
     self.driveBase.stop()
+    self.driveBase.settings(
+      straight_speed=DEFAULT_STRAIGHT_SPEED,
+      straight_acceleration=DEFAULT_STRAIGHT_ACCEL,
+      turn_rate=DEFAULT_TURN_RATE,
+      turn_acceleration=DEFAULT_TURN_ACCEL,
+    )
+    self.straight_speed = DEFAULT_STRAIGHT_SPEED
+    self.arm_speed = DEFAULT_ARM_SPEED
     self.driveBase.use_gyro(False)
     self.hub.imu.reset_heading(0)
-    wait(200)  # 자이로 안정화 대기
+    wait(500)  # 자이로 안정화 대기
     self.driveBase.use_gyro(True)
     commands = text.split("#")
     for command in commands:
@@ -326,6 +370,16 @@ class TerraScript:
         nonblock = (len(args) >= 2 and str(args[-1]).lower() == 'true')
         self.do_right_arm_turn(angle, nonblock)
 
+      elif name == 'LH':
+        speed = float(args[0]) if len(args) >= 1 and args[0] else None
+        duty = float(args[1]) if len(args) >= 2 and args[1] else 30
+        self.do_left_arm_home(speed, duty)
+
+      elif name == 'RH':
+        speed = float(args[0]) if len(args) >= 1 and args[0] else None
+        duty = float(args[1]) if len(args) >= 2 and args[1] else 30
+        self.do_right_arm_home(speed, duty)
+
       elif name == 'AA' and len(args) >= 1:
         if len(args) == 1:
           self.do_arms_turn(float(args[0]))
@@ -336,7 +390,7 @@ class TerraScript:
         self.do_wait(float(args[0]))
 
       elif name == 'GS' and len(args) >= 1:
-        wheel_degrees = float(args[0])
+        distance_mm = float(args[0])
         speed = float(args[1]) if len(args) >= 2 and args[1] else None
 
         target_heading = None
@@ -344,7 +398,7 @@ class TerraScript:
           target_heading = float(args[2])
 
         self.gyro_straight(
-          wheel_degrees,
+          distance_mm,
           speed=speed,
           target_heading=target_heading,
         )
