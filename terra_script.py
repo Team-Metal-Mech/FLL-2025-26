@@ -33,6 +33,7 @@ class TerraScript:
     self.arm_speed = DEFAULT_ARM_SPEED
     self.stop_requested = False
     self.arm_timeout_ms = None
+    self._target_heading = 0
     # 기본 설정 적용
     self.driveBase.settings(straight_speed=DEFAULT_STRAIGHT_SPEED,
                      straight_acceleration=DEFAULT_STRAIGHT_ACCEL,
@@ -71,7 +72,7 @@ class TerraScript:
   def do_backward(self, value):
     self._drive_distance(round(-value * 10))
 
-  def _wait_gyro_settle(self, threshold=1, max_ms=200):
+  def _wait_gyro_settle(self, threshold=0.5, max_ms=300):
     for _ in range(max_ms // 10):
       h1 = self.hub.imu.heading()
       wait(10)
@@ -81,10 +82,12 @@ class TerraScript:
         return
 
   def do_left_turn(self, value):
+    self._target_heading -= value
     self.driveBase.turn(-value, then=Stop.HOLD)
     self._wait_gyro_settle()
 
   def do_right_turn(self, value):
+    self._target_heading += value
     self.driveBase.turn(value, then=Stop.HOLD)
     self._wait_gyro_settle()
 
@@ -217,7 +220,9 @@ class TerraScript:
       loop_delay_ms=10,
   ):
     if target_heading is None:
-      target_heading = self.hub.imu.heading()
+      target_heading = self._target_heading
+
+    self._wait_gyro_settle()
 
     if speed is not None:
       self.set_straight_speed(speed)
@@ -309,6 +314,7 @@ class TerraScript:
     self.straight_speed = DEFAULT_STRAIGHT_SPEED
     self.arm_speed = DEFAULT_ARM_SPEED
     self.arm_timeout_ms = None
+    self._target_heading = 0
     self.driveBase.use_gyro(False)
     self._wait_gyro_settle(threshold=0.5, max_ms=2000)
     self.hub.imu.reset_heading(0)

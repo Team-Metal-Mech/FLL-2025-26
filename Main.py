@@ -16,6 +16,7 @@ def wait_release(hub):
         wait(20)
     return center_seen
 
+
 robot = TerraScript()
 hub = robot.hub
 

@@ -20,6 +20,6 @@ echo "]" >> $OUTFILE
 echo -e "\n\n" >> $OUTFILE
 awk '/run_data = \[\]/ {found=1; next} !found {next} {print}' $MAIN_PY >> $OUTFILE
 
-pybricksdev run ble $OUTFILE
+python3.11 -m pybricksdev run ble $OUTFILE
 
 rm $OUTFILE
