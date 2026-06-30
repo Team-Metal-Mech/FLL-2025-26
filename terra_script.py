@@ -233,12 +233,23 @@ class TerraScript:
     decel_zone = min(150, target_distance * 0.3)
     min_speed = 80
     prev_error = 0
+    window_start_dist = 0
+    window_elapsed = 0
+    WINDOW_MS = 500
+    MIN_PROGRESS_MM = 5
 
     self.driveBase.reset()
 
     while abs(self.driveBase.distance()) < target_distance:
       if self._check_stop():
         break
+      window_elapsed += loop_delay_ms
+      if window_elapsed >= WINDOW_MS:
+        cur_dist = abs(self.driveBase.distance())
+        if cur_dist - window_start_dist < MIN_PROGRESS_MM:
+          break
+        window_start_dist = cur_dist
+        window_elapsed = 0
       heading = self.hub.imu.heading()
       error = (target_heading - heading + 180) % 360 - 180
 
